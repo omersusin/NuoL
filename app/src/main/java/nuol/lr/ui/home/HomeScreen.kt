@@ -1,5 +1,6 @@
 package nuol.lr.ui.home
 
+import android.appwidget.AppWidgetHost
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -9,9 +10,10 @@ import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(viewModel: HomeViewModel) {
+fun HomeScreen(viewModel: HomeViewModel, appWidgetHost: AppWidgetHost) {
     val pinnedApps by viewModel.pinnedApps.collectAsState()
     val dockApps by viewModel.dockApps.collectAsState()
+    val widgetIds by viewModel.widgetIds.collectAsState() // YENİ
     val homeCols by viewModel.homeColumns.collectAsState()
     val iconSize by viewModel.iconSize.collectAsState()
     val showLabels by viewModel.showLabels.collectAsState()
@@ -29,8 +31,16 @@ fun HomeScreen(viewModel: HomeViewModel) {
             Workspace(
                 modifier = Modifier.weight(1f),
                 onSwipeUp = { isDrawerOpen = true },
-                pinnedApps = pinnedApps, homeColumns = homeCols, iconSize = iconSize, showLabels = showLabels,
+                pinnedApps = pinnedApps, 
+                widgetIds = widgetIds, // YENİ
+                appWidgetHost = appWidgetHost, // YENİ
+                homeColumns = homeCols, iconSize = iconSize, showLabels = showLabels,
                 onUnpinApp = { pkg -> viewModel.unpinAppFromHome(pkg) },
+                onAddWidget = { id -> viewModel.addWidget(id) }, // YENİ
+                onRemoveWidget = { id -> 
+                    appWidgetHost.deleteAppWidgetId(id)
+                    viewModel.removeWidget(id) 
+                },
                 onOpenSettings = { isSettingsOpen = true }
             )
             Dock(apps = dockApps, iconSize = iconSize, onUnpin = { pkg -> viewModel.unpinAppFromDock(pkg) })

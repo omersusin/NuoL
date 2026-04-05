@@ -1,11 +1,18 @@
 package nuol.lr.ui.home
 
+import android.app.Activity
+import android.appwidget.AppWidgetHost
+import android.appwidget.AppWidgetManager
 import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.*
@@ -23,31 +30,41 @@ fun Workspace(
     modifier: Modifier = Modifier,
     onSwipeUp: () -> Unit,
     pinnedApps: List<AppInfo>,
+    widgetIds: List<Int>, // YENİ
+    appWidgetHost: AppWidgetHost, // YENİ
     homeColumns: Int,
     iconSize: Int,
     showLabels: Boolean,
     onUnpinApp: (String) -> Unit,
+    onAddWidget: (Int) -> Unit, // YENİ
+    onRemoveWidget: (Int) -> Unit, // YENİ
     onOpenSettings: () -> Unit
 ) {
     val context = LocalContext.current
     var showWorkspaceMenu by remember { mutableStateOf(false) }
 
+    // YENİ: Sistem Widget Seçicisini çağıran Launcher
+    val widgetPickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val appWidgetId = result.data?.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, -1) ?: -1
+        if (result.resultCode == Activity.RESULT_OK && appWidgetId != -1) {
+            onAddWidget(appWidgetId)
+        } else if (appWidgetId != -1) {
+            appWidgetHost.deleteAppWidgetId(appWidgetId) // İptal edildiyse hafızayı temizle
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .pointerInput(Unit) {
-                detectTapGestures(onLongPress = { showWorkspaceMenu = true })
-            }
+            .pointerInput(Unit) { detectTapGestures(onLongPress = { showWorkspaceMenu = true }) }
             .pointerInput(Unit) {
                 detectVerticalDragGestures { _, dragAmount ->
-                    if (dragAmount < -20) onSwipeUp() // Yukarı Kaydır: Çekmece
+                    if (dragAmount < -20) onSwipeUp()
                     if (dragAmount > 30) {
-                        // Aşağı Kaydır: Bildirim Paneli (Sistem metodunu tetikler)
                         try {
                             val service = context.getSystemService("statusbar")
                             val statusbarManager = Class.forName("android.app.StatusBarManager")
-                            val expand = statusbarManager.getMethod("expandNotificationsPanel")
-                            expand.invoke(service)
+                            statusbarManager.getMethod("expandNotificationsPanel").invoke(service)
                         } catch (e: Exception) { e.printStackTrace() }
                     }
                 }
@@ -57,6 +74,16 @@ fun Workspace(
             columns = GridCells.Fixed(homeColumns),
             modifier = Modifier.fillMaxWidth().align(Alignment.Center).padding(horizontal = 8.dp, vertical = 32.dp)
         ) {
+            // YENİ: Widget'ları ızgaranın en üstüne tam satır yayarak çiziyoruz
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Column {
+                    widgetIds.forEach { id ->
+                        AndroidWidget(appWidgetHost = appWidgetHost, appWidgetId = id, onRemove = { onRemoveWidget(id) })
+                    }
+                }
+            }
+
+            // Normal Uygulamalar
             items(pinnedApps) { app ->
                 var expanded by remember { mutableStateOf(false) }
                 Box {
@@ -76,6 +103,14 @@ fun Workspace(
                 onDismissRequest = { showWorkspaceMenu = false }, title = { Text("Ana Ekran") },
                 text = {
                     Column {
+                        // YENİ: Widget Ekleme Butonu
+                        Text("Widget Ekle", modifier = Modifier.fillMaxWidth().clickable { 
+                            showWorkspaceMenu = false
+                            val appWidgetId = appWidgetHost.allocateAppWidgetId()
+                            val intent = Intent(AppWidgetManager.ACTION_APPWIDGET_PICK).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                            widgetPickerLauncher.launch(intent)
+                        }.padding(16.dp))
+                        Divider()
                         Text("NuoL Ayarları", modifier = Modifier.fillMaxWidth().clickable { showWorkspaceMenu = false; onOpenSettings() }.padding(16.dp))
                     }
                 },
