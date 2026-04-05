@@ -10,7 +10,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -28,6 +27,16 @@ fun Workspace(
 ) {
     val dateFormat = SimpleDateFormat("EEEE, d MMMM", Locale.getDefault())
     val currentDate = dateFormat.format(Date())
+    
+    // Günün saatine göre dinamik karşılama mesajı
+    val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+    val greeting = when (hour) {
+        in 5..11 -> "Günaydın,"
+        in 12..17 -> "İyi Günler,"
+        in 18..22 -> "İyi Akşamlar,"
+        else -> "İyi Geceler,"
+    }
+
     var showDialog by remember { mutableStateOf(false) }
 
     Box(
@@ -39,10 +48,10 @@ fun Workspace(
                 }
             }
     ) {
-        // Saat ve Tarih Alanı
+        // Dinamik Karşılama ve Tarih Alanı
         Column(modifier = Modifier.padding(top = 100.dp, start = 32.dp).align(Alignment.TopStart)) {
             Text(
-                text = "NuoL",
+                text = greeting,
                 style = MaterialTheme.typography.displayLarge.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.primary
             )
@@ -53,24 +62,22 @@ fun Workspace(
             )
         }
 
-        // Sağ Üstte Tema (İkon Paketi) Seçici Butonu
+        // İkon Paketi Seçici Butonu
         IconButton(
             onClick = { showDialog = true },
             modifier = Modifier.align(Alignment.TopEnd).padding(top = 100.dp, end = 32.dp)
         ) {
-            Icon(Icons.Default.Brush, contentDescription = "İkon Paketi Seç", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
+            Icon(Icons.Default.Brush, contentDescription = "Tema Seç", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
         }
 
-        // İkon Paketi Seçim Dialogu
         if (showDialog) {
             AlertDialog(
                 onDismissRequest = { showDialog = false },
                 title = { Text("İkon Paketi Seç") },
                 text = {
                     Column {
-                        // Sistem Varsayılanı Seçeneği
                         Text(
-                            text = "Sistem Varsayılanı (Orijinal)",
+                            text = "Sistem Varsayılanı",
                             modifier = Modifier.fillMaxWidth().clickable {
                                 onApplyIconPack(null)
                                 showDialog = false
@@ -78,7 +85,6 @@ fun Workspace(
                             style = MaterialTheme.typography.bodyLarge
                         )
                         Divider()
-                        // Yüklü İkon Paketleri Listesi
                         iconPacks.forEach { pack ->
                             Text(
                                 text = pack.label,
@@ -88,9 +94,6 @@ fun Workspace(
                                 }.padding(16.dp),
                                 style = MaterialTheme.typography.bodyLarge
                             )
-                        }
-                        if (iconPacks.isEmpty()) {
-                            Text("Cihazda yüklü ikon paketi bulunamadı.", modifier = Modifier.padding(16.dp), color = MaterialTheme.colorScheme.error)
                         }
                     }
                 },

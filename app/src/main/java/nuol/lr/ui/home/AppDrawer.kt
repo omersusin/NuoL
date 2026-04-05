@@ -1,7 +1,6 @@
 package nuol.lr.ui.home
 
 import android.content.Intent
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -9,16 +8,14 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -29,48 +26,49 @@ import nuol.lr.core.AppInfo
 
 @Composable
 fun AppDrawer(viewModel: HomeViewModel = viewModel()) {
-    val apps by viewModel.apps.collectAsState()
+    // Artık 'apps' yerine filtrelenmiş listeyi (filteredApps) dinliyoruz
+    val filteredApps by viewModel.filteredApps.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
     val context = LocalContext.current
 
     Column(modifier = Modifier.fillMaxSize().padding(top = 16.dp)) {
         
-        // Arama Çubuğu (Search Bar) - Expressive Tasarım (Kapsül Görünümü)
-        Box(
+        // Gerçek ve İşlevsel Arama Çubuğu (Material 3 TextField)
+        TextField(
+            value = searchQuery,
+            onValueChange = { viewModel.onSearchQueryChange(it) },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .height(56.dp)
-                .clip(RoundedCornerShape(28.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)),
-            contentAlignment = Alignment.CenterStart
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Search, 
-                    contentDescription = "Ara", 
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = "Uygulamalarda ara...", 
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
-        }
+                .padding(horizontal = 16.dp),
+            placeholder = { Text("Uygulamalarda ara...") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Ara") },
+            trailingIcon = {
+                // Eğer bir şeyler yazıldıysa "X" (Temizle) butonu çıksın
+                if (searchQuery.isNotEmpty()) {
+                    IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
+                        Icon(Icons.Default.Clear, contentDescription = "Temizle")
+                    }
+                }
+            },
+            shape = RoundedCornerShape(28.dp),
+            colors = TextFieldDefaults.colors(
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
+            ),
+            singleLine = true
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Uygulama Grid Listesi
+        // Filtrelenmiş Uygulama Grid Listesi
         LazyVerticalGrid(
             columns = GridCells.Fixed(4),
             contentPadding = WindowInsets.navigationBars.asPaddingValues(),
             modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp)
         ) {
-            items(apps) { app ->
+            items(filteredApps) { app ->
                 AppItem(app = app) {
                     val launchIntent = context.packageManager.getLaunchIntentForPackage(app.packageName)
                     if (launchIntent != null) {
