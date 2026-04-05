@@ -4,7 +4,6 @@ import android.appwidget.AppWidgetHost
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -12,13 +11,14 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import nuol.lr.ui.home.HomeScreen
 import nuol.lr.ui.home.HomeViewModel
 import nuol.lr.ui.theme.NuoLTheme
 
-// YENİ: BiometricPrompt kullanabilmek için AppCompatActivity (FragmentActivity türevi) yapıldı
-class MainActivity : AppCompatActivity() {
+// YENİ: BiometricPrompt için FragmentActivity kullanıyoruz (Tema çökmesi yapmaz!)
+class MainActivity : FragmentActivity() {
     private lateinit var appWidgetHost: AppWidgetHost
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,7 +33,7 @@ class MainActivity : AppCompatActivity() {
             val useMaterialYou by viewModel.useMaterialYou.collectAsState()
             
             val isDark = when(themeMode) { 1 -> false; 2, 3 -> true; else -> isSystemInDarkTheme() }
-            val isOled = themeMode == 3 // YENİ: OLED Saf Siyah Modu
+            val isOled = themeMode == 3 // OLED Saf Siyah Modu
 
             val view = LocalView.current
             if (!view.isInEditMode) {
