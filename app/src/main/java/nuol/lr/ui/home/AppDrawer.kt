@@ -1,6 +1,8 @@
 package nuol.lr.ui.home
 
 import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -68,6 +70,23 @@ fun AppDrawer(viewModel: HomeViewModel, closeDrawer: () -> Unit) {
                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                         DropdownMenuItem(text = { Text("Ana Ekrana Ekle") }, onClick = { expanded = false; viewModel.pinAppToHome(app.packageName); closeDrawer() })
                         DropdownMenuItem(text = { Text("Dock'a Ekle") }, onClick = { expanded = false; viewModel.pinAppToDock(app.packageName); closeDrawer() })
+                        Divider()
+                        // YENİ: Uygulama Bilgisi (App Info) Menüsü
+                        DropdownMenuItem(text = { Text("Uygulama Bilgisi") }, onClick = { 
+                            expanded = false
+                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply { data = Uri.parse("package:${app.packageName}") }
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            context.startActivity(intent)
+                            closeDrawer()
+                        })
+                        // YENİ: Uygulama Silme (Uninstall) Menüsü
+                        DropdownMenuItem(text = { Text("Sil (Kaldır)", color = MaterialTheme.colorScheme.error) }, onClick = { 
+                            expanded = false
+                            val intent = Intent(Intent.ACTION_DELETE).apply { data = Uri.parse("package:${app.packageName}") }
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            context.startActivity(intent)
+                            closeDrawer()
+                        })
                     }
                 }
             }
