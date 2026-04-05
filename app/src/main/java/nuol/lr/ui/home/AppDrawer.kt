@@ -24,31 +24,29 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import nuol.lr.core.AppInfo
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AppDrawer(viewModel: HomeViewModel, closeDrawer: () -> Unit) {
     val filteredApps by viewModel.filteredApps.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
+    val drawerCols by viewModel.drawerColumns.collectAsState()
     val context = LocalContext.current
 
     Column(modifier = Modifier.fillMaxSize().padding(top = 16.dp)) {
         TextField(
             value = searchQuery, onValueChange = { viewModel.onSearchQueryChange(it) },
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            placeholder = { Text("Uygulamalarda ara...") },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Ara") },
-            trailingIcon = {
-                if (searchQuery.isNotEmpty()) IconButton(onClick = { viewModel.onSearchQueryChange("") }) { Icon(Icons.Default.Clear, "Temizle") }
-            },
+            placeholder = { Text("Ara...") },
+            leadingIcon = { Icon(Icons.Default.Search, "Ara") },
+            trailingIcon = { if (searchQuery.isNotEmpty()) IconButton(onClick = { viewModel.onSearchQueryChange("") }) { Icon(Icons.Default.Clear, "Temizle") } },
             shape = RoundedCornerShape(28.dp),
-            colors = TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent, focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f), unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)),
+            colors = TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent),
             singleLine = true
         )
         Spacer(modifier = Modifier.height(16.dp))
         LazyVerticalGrid(
-            columns = GridCells.Fixed(4), contentPadding = WindowInsets.navigationBars.asPaddingValues(), modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp)
+            columns = GridCells.Fixed(drawerCols), contentPadding = WindowInsets.navigationBars.asPaddingValues(), modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp)
         ) {
             items(filteredApps) { app ->
                 var expanded by remember { mutableStateOf(false) }
@@ -65,28 +63,13 @@ fun AppDrawer(viewModel: HomeViewModel, closeDrawer: () -> Unit) {
                     ) {
                         AsyncImage(model = app.icon, contentDescription = app.label, modifier = Modifier.size(56.dp))
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(text = app.label, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+                        Text(app.label, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
                     }
                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                         DropdownMenuItem(text = { Text("Ana Ekrana Ekle") }, onClick = { expanded = false; viewModel.pinAppToHome(app.packageName); closeDrawer() })
                         DropdownMenuItem(text = { Text("Dock'a Ekle") }, onClick = { expanded = false; viewModel.pinAppToDock(app.packageName); closeDrawer() })
                         Divider()
-                        // YENİ: Uygulama Bilgisi (App Info) Menüsü
-                        DropdownMenuItem(text = { Text("Uygulama Bilgisi") }, onClick = { 
-                            expanded = false
-                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply { data = Uri.parse("package:${app.packageName}") }
-                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            context.startActivity(intent)
-                            closeDrawer()
-                        })
-                        // YENİ: Uygulama Silme (Uninstall) Menüsü
-                        DropdownMenuItem(text = { Text("Sil (Kaldır)", color = MaterialTheme.colorScheme.error) }, onClick = { 
-                            expanded = false
-                            val intent = Intent(Intent.ACTION_DELETE).apply { data = Uri.parse("package:${app.packageName}") }
-                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            context.startActivity(intent)
-                            closeDrawer()
-                        })
+                        DropdownMenuItem(text = { Text("Uygulama Bilgisi") }, onClick = { expanded = false; context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${app.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); closeDrawer() })
                     }
                 }
             }

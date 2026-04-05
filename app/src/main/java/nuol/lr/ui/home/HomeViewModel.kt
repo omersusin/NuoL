@@ -27,11 +27,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val dockApps: StateFlow<List<AppInfo>> = combine(_apps, settingsManager.dockAppsFlow) { appList, dock ->
-        appList.filter { dock.contains(it.packageName) }.take(5) // Dock max 5 uygulama alır
+        appList.filter { dock.contains(it.packageName) }.take(5)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _iconPacks = MutableStateFlow<List<IconPackInfo>>(emptyList())
     val iconPacks: StateFlow<List<IconPackInfo>> = _iconPacks.asStateFlow()
+
+    val drawerColumns: StateFlow<Int> = settingsManager.drawerColumnsFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 4)
+    val homeColumns: StateFlow<Int> = settingsManager.homeColumnsFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 4)
+    val currentIconPack: StateFlow<String?> = settingsManager.iconPackFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     init {
         viewModelScope.launch { _iconPacks.value = iconPackManager.getAvailableIconPacks() }
@@ -48,5 +52,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun unpinAppFromHome(packageName: String) = viewModelScope.launch { settingsManager.removePinnedApp(packageName) }
     fun pinAppToDock(packageName: String) = viewModelScope.launch { settingsManager.addDockApp(packageName) }
     fun unpinAppFromDock(packageName: String) = viewModelScope.launch { settingsManager.removeDockApp(packageName) }
+    fun setDrawerCols(cols: Int) = viewModelScope.launch { settingsManager.setDrawerColumns(cols) }
+    fun setHomeCols(cols: Int) = viewModelScope.launch { settingsManager.setHomeColumns(cols) }
     fun onSearchQueryChange(query: String) { _searchQuery.value = query }
 }

@@ -1,5 +1,6 @@
 package nuol.lr.ui.home
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -12,32 +13,41 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
     val pinnedApps by viewModel.pinnedApps.collectAsState()
     val dockApps by viewModel.dockApps.collectAsState()
-    val iconPacks by viewModel.iconPacks.collectAsState()
+    val homeCols by viewModel.homeColumns.collectAsState()
     
     var isDrawerOpen by remember { mutableStateOf(false) }
+    var isSettingsOpen by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Workspace(
-            modifier = Modifier.weight(1f),
-            onSwipeUp = { isDrawerOpen = true },
-            iconPacks = iconPacks,
-            pinnedApps = pinnedApps,
-            onApplyIconPack = { pkg -> viewModel.applyIconPack(pkg) },
-            onUnpinApp = { pkg -> viewModel.unpinAppFromHome(pkg) }
-        )
-        Dock(apps = dockApps, onUnpin = { pkg -> viewModel.unpinAppFromDock(pkg) })
-    }
+    if (isSettingsOpen) {
+        // Ayarlar Ekranı (Duvar kağıdını kapatıp kendi arka planını çizer)
+        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+            SettingsScreen(viewModel = viewModel, onBack = { isSettingsOpen = false })
+        }
+    } else {
+        // Normal Ana Ekran
+        Column(modifier = Modifier.fillMaxSize()) {
+            Workspace(
+                modifier = Modifier.weight(1f),
+                onSwipeUp = { isDrawerOpen = true },
+                pinnedApps = pinnedApps,
+                homeColumns = homeCols,
+                onUnpinApp = { pkg -> viewModel.unpinAppFromHome(pkg) },
+                onOpenSettings = { isSettingsOpen = true }
+            )
+            Dock(apps = dockApps, onUnpin = { pkg -> viewModel.unpinAppFromDock(pkg) })
+        }
 
-    if (isDrawerOpen) {
-        ModalBottomSheet(
-            onDismissRequest = { isDrawerOpen = false },
-            sheetState = sheetState,
-            containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.95f),
-            scrimColor = Color.Black.copy(alpha = 0.4f),
-            windowInsets = WindowInsets.statusBars
-        ) {
-            AppDrawer(viewModel = viewModel, closeDrawer = { isDrawerOpen = false })
+        if (isDrawerOpen) {
+            ModalBottomSheet(
+                onDismissRequest = { isDrawerOpen = false },
+                sheetState = sheetState,
+                containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.95f),
+                scrimColor = Color.Black.copy(alpha = 0.4f),
+                windowInsets = WindowInsets.statusBars
+            ) {
+                AppDrawer(viewModel = viewModel, closeDrawer = { isDrawerOpen = false })
+            }
         }
     }
 }
