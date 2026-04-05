@@ -48,6 +48,8 @@ fun Workspace(
     homeColumns: Int,
     iconSize: Int,
     showLabels: Boolean,
+    iconShape: Int, // YENİ
+    doubleTapAction: Int, // YENİ
     onUnpinApp: (String) -> Unit,
     onAddWidget: (Int) -> Unit,
     onRemoveWidget: (Int) -> Unit,
@@ -83,50 +85,46 @@ fun Workspace(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .pointerInput(Unit) { detectTapGestures(onLongPress = { showWorkspaceMenu = true }) }
+            .pointerInput(Unit) { 
+                detectTapGestures(
+                    onLongPress = { showWorkspaceMenu = true },
+                    // YENİ: Çift Tıklama Jesti
+                    onDoubleTap = {
+                        when (doubleTapAction) {
+                            1 -> onOpenSettings() // Ayarlar
+                            2 -> onSwipeUp() // Uygulama Çekmecesi
+                            3 -> { // Bildirim Paneli
+                                try {
+                                    val service = context.getSystemService("statusbar")
+                                    Class.forName("android.app.StatusBarManager").getMethod("expandNotificationsPanel").invoke(service)
+                                } catch (e: Exception) {}
+                            }
+                        }
+                    }
+                ) 
+            }
             .pointerInput(Unit) {
                 detectVerticalDragGestures { _, dragAmount ->
                     if (dragAmount < -20) onSwipeUp()
                     if (dragAmount > 30) {
                         try {
                             val service = context.getSystemService("statusbar")
-                            val statusbarManager = Class.forName("android.app.StatusBarManager")
-                            statusbarManager.getMethod("expandNotificationsPanel").invoke(service)
-                        } catch (e: Exception) { e.printStackTrace() }
+                            Class.forName("android.app.StatusBarManager").getMethod("expandNotificationsPanel").invoke(service)
+                        } catch (e: Exception) {}
                     }
                 }
             }
     ) {
-        // YENİ: Tıklanabilir Akıllı Özet
         Column(modifier = Modifier.padding(top = 80.dp, start = 24.dp).align(Alignment.TopStart)) {
             Text(greeting, style = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
             Spacer(modifier = Modifier.height(12.dp))
-            
             Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(50))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f))
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier.clip(RoundedCornerShape(50)).background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)).padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Takvimi Aç
-                Text(currentDate, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.clickable { 
-                        try {
-                            val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_CALENDAR).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            context.startActivity(intent)
-                        } catch (e: Exception) {} 
-                    }
-                )
+                Text(currentDate, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.clickable { try { context.startActivity(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_CALENDAR).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } catch (e: Exception) {} })
                 Spacer(modifier = Modifier.width(12.dp))
-                
-                // Pil Ayarlarını Aç
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { 
-                    try {
-                        val intent = Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        context.startActivity(intent)
-                    } catch (e: Exception) {} 
-                }) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { try { context.startActivity(Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } catch (e: Exception) {} }) {
                     Icon(Icons.Default.BatteryFull, contentDescription = "Pil", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("%$batteryLevel", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
@@ -136,14 +134,12 @@ fun Workspace(
 
         LazyVerticalGrid(columns = GridCells.Fixed(homeColumns), modifier = Modifier.fillMaxWidth().align(Alignment.Center).padding(horizontal = 8.dp, vertical = 32.dp)) {
             item(span = { GridItemSpan(maxLineSpan) }) {
-                Column {
-                    widgetIds.forEach { id -> AndroidWidget(appWidgetHost = appWidgetHost, appWidgetId = id, onRemove = { onRemoveWidget(id) }) }
-                }
+                Column { widgetIds.forEach { id -> AndroidWidget(appWidgetHost = appWidgetHost, appWidgetId = id, onRemove = { onRemoveWidget(id) }) } }
             }
             items(pinnedApps) { app ->
                 var expanded by remember { mutableStateOf(false) }
                 Box {
-                    AppItemUI(app = app, iconSize = iconSize, showLabel = showLabels, onClick = { context.packageManager.getLaunchIntentForPackage(app.packageName)?.let { context.startActivity(it) } }, onLongClick = { expanded = true })
+                    AppItemUI(app = app, iconSize = iconSize, showLabel = showLabels, iconShape = iconShape, onClick = { context.packageManager.getLaunchIntentForPackage(app.packageName)?.let { context.startActivity(it) } }, onLongClick = { expanded = true })
                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                         DropdownMenuItem(text = { Text("Kaldır", color = MaterialTheme.colorScheme.error) }, onClick = { expanded = false; onUnpinApp(app.packageName) })
                     }

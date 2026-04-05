@@ -19,7 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun AppDrawer(viewModel: HomeViewModel, closeDrawer: () -> Unit) {
+fun AppDrawer(viewModel: HomeViewModel, closeDrawer: () -> Unit, iconShape: Int) {
     val filteredApps by viewModel.filteredApps.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val drawerCols by viewModel.drawerColumns.collectAsState()
@@ -30,19 +30,16 @@ fun AppDrawer(viewModel: HomeViewModel, closeDrawer: () -> Unit) {
     Column(modifier = Modifier.fillMaxSize().padding(top = 16.dp)) {
         TextField(
             value = searchQuery, onValueChange = { viewModel.onSearchQueryChange(it) },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            placeholder = { Text("Ara...") },
-            leadingIcon = { Icon(Icons.Default.Search, "Ara") },
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), placeholder = { Text("Ara...") }, leadingIcon = { Icon(Icons.Default.Search, "Ara") },
             trailingIcon = { if (searchQuery.isNotEmpty()) IconButton(onClick = { viewModel.onSearchQueryChange("") }) { Icon(Icons.Default.Clear, "Temizle") } },
-            shape = RoundedCornerShape(28.dp),
-            colors = TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent), singleLine = true
+            shape = RoundedCornerShape(28.dp), colors = TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent), singleLine = true
         )
         Spacer(modifier = Modifier.height(16.dp))
         LazyVerticalGrid(columns = GridCells.Fixed(drawerCols), contentPadding = WindowInsets.navigationBars.asPaddingValues(), modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp)) {
             items(filteredApps) { app ->
                 var expanded by remember { mutableStateOf(false) }
                 Box {
-                    AppItemUI(app = app, iconSize = iconSize, showLabel = showLabels,
+                    AppItemUI(app = app, iconSize = iconSize, showLabel = showLabels, iconShape = iconShape,
                         onClick = { context.packageManager.getLaunchIntentForPackage(app.packageName)?.let { context.startActivity(it); closeDrawer() } },
                         onLongClick = { expanded = true }
                     )
@@ -50,7 +47,6 @@ fun AppDrawer(viewModel: HomeViewModel, closeDrawer: () -> Unit) {
                         DropdownMenuItem(text = { Text("Ana Ekrana Ekle") }, onClick = { expanded = false; viewModel.pinAppToHome(app.packageName); closeDrawer() })
                         DropdownMenuItem(text = { Text("Dock'a Ekle") }, onClick = { expanded = false; viewModel.pinAppToDock(app.packageName); closeDrawer() })
                         Divider()
-                        // YENİ: Uygulamayı Gizle Seçeneği
                         DropdownMenuItem(text = { Text("Uygulamayı Gizle") }, onClick = { expanded = false; viewModel.hideApp(app.packageName); closeDrawer() })
                         DropdownMenuItem(text = { Text("Uygulama Bilgisi") }, onClick = { expanded = false; context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${app.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); closeDrawer() })
                     }

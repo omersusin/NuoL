@@ -19,12 +19,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     val appSortMode = settingsManager.appSortModeFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
-    // YENİ: Filtreleme sırasında Seçili Sıralamayı Uygula
     val filteredApps = combine(_apps, _searchQuery, settingsManager.hiddenAppsFlow, appSortMode) { list, q, hidden, sortMode -> 
         val visibleApps = list.filter { !hidden.contains(it.packageName) }
         val searchedApps = if (q.isBlank()) visibleApps else visibleApps.filter { it.label.contains(q, true) }
-        
-        // 0: A-Z, 1: Z-A
         if (sortMode == 1) searchedApps.sortedByDescending { it.label.lowercase() } else searchedApps.sortedBy { it.label.lowercase() }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -40,7 +37,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val themeMode = settingsManager.themeModeFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
     val widgetIds = settingsManager.widgetIdsFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val showStatusBar = settingsManager.showStatusBarFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-    val drawerOpacity = settingsManager.drawerOpacityFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 95) // YENİ
+    val drawerOpacity = settingsManager.drawerOpacityFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 95)
+    
+    // YENİ STATE'LER
+    val doubleTapAction = settingsManager.doubleTapActionFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+    val iconShape = settingsManager.iconShapeFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+    val enableBlur = settingsManager.enableBlurFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     init {
         viewModelScope.launch { iconPacks.value = iconPackManager.getAvailableIconPacks() }
@@ -68,8 +70,11 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun hideApp(pkg: String) = viewModelScope.launch { settingsManager.addHiddenApp(pkg) }
     fun unhideApp(pkg: String) = viewModelScope.launch { settingsManager.removeHiddenApp(pkg) }
     fun setShowStatusBar(show: Boolean) = viewModelScope.launch { settingsManager.setShowStatusBar(show) }
-    
-    // YENİ
     fun setDrawerOpacity(opacity: Int) = viewModelScope.launch { settingsManager.setDrawerOpacity(opacity) }
     fun setAppSortMode(mode: Int) = viewModelScope.launch { settingsManager.setAppSortMode(mode) }
+    
+    // YENİ
+    fun setDoubleTapAction(action: Int) = viewModelScope.launch { settingsManager.setDoubleTapAction(action) }
+    fun setIconShape(shape: Int) = viewModelScope.launch { settingsManager.setIconShape(shape) }
+    fun setEnableBlur(enable: Boolean) = viewModelScope.launch { settingsManager.setEnableBlur(enable) }
 }

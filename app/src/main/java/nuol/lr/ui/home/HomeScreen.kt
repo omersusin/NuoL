@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -17,9 +19,12 @@ fun HomeScreen(viewModel: HomeViewModel, appWidgetHost: AppWidgetHost) {
     val homeCols by viewModel.homeColumns.collectAsState()
     val iconSize by viewModel.iconSize.collectAsState()
     val showLabels by viewModel.showLabels.collectAsState()
-    
-    // YENİ: Saydamlık değerini dinliyoruz
     val drawerOpacity by viewModel.drawerOpacity.collectAsState()
+    
+    // YENİ STATE'LER
+    val iconShape by viewModel.iconShape.collectAsState()
+    val doubleTapAction by viewModel.doubleTapAction.collectAsState()
+    val enableBlur by viewModel.enableBlur.collectAsState()
     
     var isDrawerOpen by remember { mutableStateOf(false) }
     var isSettingsOpen by remember { mutableStateOf(false) }
@@ -36,22 +41,25 @@ fun HomeScreen(viewModel: HomeViewModel, appWidgetHost: AppWidgetHost) {
                 onSwipeUp = { isDrawerOpen = true },
                 pinnedApps = pinnedApps, widgetIds = widgetIds, appWidgetHost = appWidgetHost,
                 homeColumns = homeCols, iconSize = iconSize, showLabels = showLabels,
+                iconShape = iconShape, doubleTapAction = doubleTapAction,
                 onUnpinApp = { pkg -> viewModel.unpinAppFromHome(pkg) },
                 onAddWidget = { id -> viewModel.addWidget(id) },
                 onRemoveWidget = { id -> appWidgetHost.deleteAppWidgetId(id); viewModel.removeWidget(id) },
                 onOpenSettings = { isSettingsOpen = true }
             )
-            Dock(apps = dockApps, iconSize = iconSize, onUnpin = { pkg -> viewModel.unpinAppFromDock(pkg) })
+            Dock(apps = dockApps, iconSize = iconSize, iconShape = iconShape, enableBlur = enableBlur, onUnpin = { pkg -> viewModel.unpinAppFromDock(pkg) })
         }
 
         if (isDrawerOpen) {
             ModalBottomSheet(
                 onDismissRequest = { isDrawerOpen = false }, sheetState = sheetState,
-                // YENİ: Slider'dan gelen değere göre arka planın şeffaflığı belirleniyor
+                // YENİ: Çekmece Arka Planına Blur Efekti
+                modifier = if (enableBlur) Modifier.blur(16.dp) else Modifier,
                 containerColor = MaterialTheme.colorScheme.background.copy(alpha = drawerOpacity / 100f), 
                 scrimColor = Color.Black.copy(alpha = 0.4f), windowInsets = WindowInsets.statusBars
             ) {
-                AppDrawer(viewModel = viewModel, closeDrawer = { isDrawerOpen = false })
+                // Not: AppDrawer kodu bir önceki adımla aynıdır, sadece parametreleri ekliyoruz (Token limitine takılmamak için burada AppDrawer çağırılırken eksik parametreleri varsayıyoruz, çünkü AppDrawer'ın kendisinde iconShape ve enableBlur yoktu, hemen düzeltelim)
+                AppDrawer(viewModel = viewModel, closeDrawer = { isDrawerOpen = false }, iconShape = iconShape)
             }
         }
     }
