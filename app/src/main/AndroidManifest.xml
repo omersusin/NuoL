@@ -1,16 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
+    <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" /> <!-- YENİ: Bildirim Jesti -->
 
     <application
         android:allowBackup="true"
         android:label="NuoL"
         android:supportsRtl="true"
-        android:theme="@style/Theme.NuoL"> <!-- YENİ TEMA BURADA -->
-
+        android:theme="@style/Theme.NuoL">
         <activity
             android:name=".MainActivity"
             android:exported="true"

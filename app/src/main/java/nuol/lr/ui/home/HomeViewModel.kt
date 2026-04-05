@@ -14,45 +14,40 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     
     private val _apps = MutableStateFlow<List<AppInfo>>(emptyList())
     val apps: StateFlow<List<AppInfo>> = _apps.asStateFlow()
-
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    val filteredApps: StateFlow<List<AppInfo>> = combine(_apps, _searchQuery) { appList, query ->
-        if (query.isBlank()) appList else appList.filter { it.label.contains(query, ignoreCase = true) }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val filteredApps = combine(_apps, _searchQuery) { list, q -> if (q.isBlank()) list else list.filter { it.label.contains(q, true) } }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val pinnedApps = combine(_apps, settingsManager.pinnedAppsFlow) { list, pinned -> list.filter { pinned.contains(it.packageName) } }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val dockApps = combine(_apps, settingsManager.dockAppsFlow) { list, dock -> list.filter { dock.contains(it.packageName) }.take(5) }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val iconPacks = MutableStateFlow<List<IconPackInfo>>(emptyList())
 
-    val pinnedApps: StateFlow<List<AppInfo>> = combine(_apps, settingsManager.pinnedAppsFlow) { appList, pinned ->
-        appList.filter { pinned.contains(it.packageName) }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    val dockApps: StateFlow<List<AppInfo>> = combine(_apps, settingsManager.dockAppsFlow) { appList, dock ->
-        appList.filter { dock.contains(it.packageName) }.take(5)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    private val _iconPacks = MutableStateFlow<List<IconPackInfo>>(emptyList())
-    val iconPacks: StateFlow<List<IconPackInfo>> = _iconPacks.asStateFlow()
-
-    val drawerColumns: StateFlow<Int> = settingsManager.drawerColumnsFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 4)
-    val homeColumns: StateFlow<Int> = settingsManager.homeColumnsFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 4)
-    val currentIconPack: StateFlow<String?> = settingsManager.iconPackFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    // Yeni Ayarlar
+    val drawerColumns = settingsManager.drawerColumnsFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 4)
+    val homeColumns = settingsManager.homeColumnsFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 4)
+    val iconSize = settingsManager.iconSizeFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 56)
+    val showLabels = settingsManager.showLabelsFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val themeMode = settingsManager.themeModeFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     init {
-        viewModelScope.launch { _iconPacks.value = iconPackManager.getAvailableIconPacks() }
+        viewModelScope.launch { iconPacks.value = iconPackManager.getAvailableIconPacks() }
         viewModelScope.launch {
             settingsManager.iconPackFlow.collect { savedPack ->
-                if (savedPack != null) iconPackManager.setIconPack(savedPack) else iconPackManager.setIconPack("")
+                iconPackManager.setIconPack(savedPack ?: "")
                 _apps.value = appManager.getInstalledApps()
             }
         }
     }
 
-    fun applyIconPack(packageName: String?) = viewModelScope.launch { settingsManager.setIconPackPreference(packageName) }
-    fun pinAppToHome(packageName: String) = viewModelScope.launch { settingsManager.addPinnedApp(packageName) }
-    fun unpinAppFromHome(packageName: String) = viewModelScope.launch { settingsManager.removePinnedApp(packageName) }
-    fun pinAppToDock(packageName: String) = viewModelScope.launch { settingsManager.addDockApp(packageName) }
-    fun unpinAppFromDock(packageName: String) = viewModelScope.launch { settingsManager.removeDockApp(packageName) }
+    fun pinAppToHome(pkg: String) = viewModelScope.launch { settingsManager.addPinnedApp(pkg) }
+    fun unpinAppFromHome(pkg: String) = viewModelScope.launch { settingsManager.removePinnedApp(pkg) }
+    fun pinAppToDock(pkg: String) = viewModelScope.launch { settingsManager.addDockApp(pkg) }
+    fun unpinAppFromDock(pkg: String) = viewModelScope.launch { settingsManager.removeDockApp(pkg) }
     fun setDrawerCols(cols: Int) = viewModelScope.launch { settingsManager.setDrawerColumns(cols) }
     fun setHomeCols(cols: Int) = viewModelScope.launch { settingsManager.setHomeColumns(cols) }
+    fun applyIconPack(pkg: String?) = viewModelScope.launch { settingsManager.setIconPackPreference(pkg) }
+    fun setIconSize(size: Int) = viewModelScope.launch { settingsManager.setIconSize(size) }
+    fun setShowLabels(show: Boolean) = viewModelScope.launch { settingsManager.setShowLabels(show) }
+    fun setThemeMode(mode: Int) = viewModelScope.launch { settingsManager.setThemeMode(mode) }
     fun onSearchQueryChange(query: String) { _searchQuery.value = query }
 }
