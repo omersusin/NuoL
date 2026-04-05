@@ -28,11 +28,18 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         if (sortMode == 1) searchedApps.sortedByDescending { it.label.lowercase() } else searchedApps.sortedBy { it.label.lowercase() }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    // YENİ: Sık Kullanılan (Önerilen) Uygulamalar Motoru (En çok tıklanan ilk 4)
+    val suggestedApps = combine(apps, settingsManager.appUsageStatsFlow, settingsManager.hiddenAppsFlow) { list, usageStats, hidden ->
+        list.filter { !hidden.contains(it.packageName) && usageStats.containsKey(it.packageName) }
+            .sortedByDescending { usageStats[it.packageName] ?: 0 }
+            .take(4)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     val allAppsWithHiddenState = combine(apps, settingsManager.hiddenAppsFlow) { list, hidden -> list.map { Pair(it, hidden.contains(it.packageName)) } }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val pinnedApps = combine(apps, settingsManager.pinnedAppsFlow) { list, pinned -> list.filter { pinned.contains(it.packageName) } }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val dockApps = combine(apps, settingsManager.dockAppsFlow) { list, dock -> list.filter { dock.contains(it.packageName) }.take(5) }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    
     val iconPacks = MutableStateFlow<List<IconPackInfo>>(emptyList())
-
     val drawerColumns = settingsManager.drawerColumnsFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 4)
     val homeColumns = settingsManager.homeColumnsFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 4)
     val iconSize = settingsManager.iconSizeFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 56)
@@ -45,20 +52,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val iconShape = settingsManager.iconShapeFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
     val enableBlur = settingsManager.enableBlurFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
     val useMaterialYou = settingsManager.useMaterialYouFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-    
-    // YENİ
     val bottomSearchBar = settingsManager.bottomSearchBarFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
     val hapticFeedback = settingsManager.hapticFeedbackFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
     init {
         viewModelScope.launch { iconPacks.value = iconPackManager.getAvailableIconPacks() }
-        viewModelScope.launch {
-            settingsManager.iconPackFlow.collect { savedPack ->
-                iconPackManager.setIconPack(savedPack ?: "")
-                _rawApps.value = appManager.getInstalledApps()
-            }
-        }
+        viewModelScope.launch { settingsManager.iconPackFlow.collect { savedPack -> iconPackManager.setIconPack(savedPack ?: ""); _rawApps.value = appManager.getInstalledApps() } }
     }
+
+    // YENİ: Uygulama başlatılırken sayacı artırır
+    fun launchApp(pkg: String) = viewModelScope.launch { settingsManager.incrementAppUsage(pkg) }
 
     fun pinAppToHome(pkg: String) = viewModelScope.launch { settingsManager.addPinnedApp(pkg) }
     fun unpinAppFromHome(pkg: String) = viewModelScope.launch { settingsManager.removePinnedApp(pkg) }
@@ -83,8 +86,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun setEnableBlur(enable: Boolean) = viewModelScope.launch { settingsManager.setEnableBlur(enable) }
     fun renameApp(pkg: String, newName: String) = viewModelScope.launch { settingsManager.setCustomAppName(pkg, newName) }
     fun setUseMaterialYou(use: Boolean) = viewModelScope.launch { settingsManager.setUseMaterialYou(use) }
-    
-    // YENİ
     fun setBottomSearchBar(bottom: Boolean) = viewModelScope.launch { settingsManager.setBottomSearchBar(bottom) }
     fun setHapticFeedback(enable: Boolean) = viewModelScope.launch { settingsManager.setHapticFeedback(enable) }
 }

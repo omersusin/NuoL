@@ -2,9 +2,9 @@ package nuol.lr
 
 import android.appwidget.AppWidgetHost
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -17,7 +17,8 @@ import nuol.lr.ui.home.HomeScreen
 import nuol.lr.ui.home.HomeViewModel
 import nuol.lr.ui.theme.NuoLTheme
 
-class MainActivity : ComponentActivity() {
+// YENİ: BiometricPrompt kullanabilmek için AppCompatActivity (FragmentActivity türevi) yapıldı
+class MainActivity : AppCompatActivity() {
     private lateinit var appWidgetHost: AppWidgetHost
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,8 +30,10 @@ class MainActivity : ComponentActivity() {
             val viewModel: HomeViewModel = viewModel()
             val themeMode by viewModel.themeMode.collectAsState()
             val showStatusBar by viewModel.showStatusBar.collectAsState()
-            val useMaterialYou by viewModel.useMaterialYou.collectAsState() // YENİ
-            val isDark = when(themeMode) { 1 -> false; 2 -> true; else -> isSystemInDarkTheme() }
+            val useMaterialYou by viewModel.useMaterialYou.collectAsState()
+            
+            val isDark = when(themeMode) { 1 -> false; 2, 3 -> true; else -> isSystemInDarkTheme() }
+            val isOled = themeMode == 3 // YENİ: OLED Saf Siyah Modu
 
             val view = LocalView.current
             if (!view.isInEditMode) {
@@ -42,7 +45,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            NuoLTheme(darkTheme = isDark, useMaterialYou = useMaterialYou) {
+            NuoLTheme(darkTheme = isDark, useMaterialYou = useMaterialYou, isOled = isOled) {
                 HomeScreen(viewModel = viewModel, appWidgetHost = appWidgetHost)
             }
         }

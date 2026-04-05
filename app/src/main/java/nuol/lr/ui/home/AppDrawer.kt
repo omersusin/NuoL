@@ -8,9 +8,9 @@ import android.content.pm.ShortcutInfo
 import android.net.Uri
 import android.os.Process
 import android.provider.Settings
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,6 +34,7 @@ import nuol.lr.core.AppInfo
 @Composable
 fun AppDrawer(viewModel: HomeViewModel, closeDrawer: () -> Unit, iconShape: Int) {
     val filteredApps by viewModel.filteredApps.collectAsState()
+    val suggestedApps by viewModel.suggestedApps.collectAsState() // YENİ
     val searchQuery by viewModel.searchQuery.collectAsState()
     val drawerCols by viewModel.drawerColumns.collectAsState()
     val iconSize by viewModel.iconSize.collectAsState()
@@ -47,7 +48,6 @@ fun AppDrawer(viewModel: HomeViewModel, closeDrawer: () -> Unit, iconShape: Int)
     var appToRename by remember { mutableStateOf<AppInfo?>(null) }
     var renameText by remember { mutableStateOf("") }
 
-    // Arama Çubuğu Bileşeni
     val searchBar = @Composable {
         TextField(
             value = searchQuery, onValueChange = { viewModel.onSearchQueryChange(it) },
@@ -70,17 +70,34 @@ fun AppDrawer(viewModel: HomeViewModel, closeDrawer: () -> Unit, iconShape: Int)
             }
         } else {
             LazyVerticalGrid(columns = GridCells.Fixed(drawerCols), contentPadding = WindowInsets.navigationBars.asPaddingValues(), modifier = Modifier.weight(1f).fillMaxSize().padding(horizontal = 8.dp)) {
+                
+                // YENİ: Akıllı Öneriler Satırı
+                if (suggestedApps.isNotEmpty() && searchQuery.isEmpty()) {
+                    items(suggestedApps) { app ->
+                        AppItemUI(app = app, iconSize = iconSize, showLabel = showLabels, iconShape = iconShape,
+                            onClick = { 
+                                viewModel.launchApp(app.packageName) // Sayacı artır
+                                context.packageManager.getLaunchIntentForPackage(app.packageName)?.let { context.startActivity(it); closeDrawer() } 
+                            },
+                            onLongClick = { if (hapticFeedback) haptic.performHapticFeedback(HapticFeedbackType.LongPress) }
+                        )
+                    }
+                    item(span = { GridItemSpan(maxLineSpan) }) { Divider(modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp).fillMaxWidth(), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)) }
+                }
+
+                // Tüm Uygulamalar
                 items(filteredApps) { app ->
                     var expanded by remember { mutableStateOf(false) }
-                    // YENİ: Derin Kısayollar Listesi
                     var appShortcuts by remember { mutableStateOf<List<ShortcutInfo>>(emptyList()) }
 
                     Box {
                         AppItemUI(app = app, iconSize = iconSize, showLabel = showLabels, iconShape = iconShape,
-                            onClick = { context.packageManager.getLaunchIntentForPackage(app.packageName)?.let { context.startActivity(it); closeDrawer() } },
+                            onClick = { 
+                                viewModel.launchApp(app.packageName) // YENİ: Sayacı artır
+                                context.packageManager.getLaunchIntentForPackage(app.packageName)?.let { context.startActivity(it); closeDrawer() } 
+                            },
                             onLongClick = {
                                 if (hapticFeedback) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                // Kısayolları Çek
                                 try {
                                     val launcherApps = context.getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
                                     val query = LauncherApps.ShortcutQuery().setPackage(app.packageName).setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC or LauncherApps.ShortcutQuery.FLAG_MATCH_MANIFEST)
@@ -90,21 +107,14 @@ fun AppDrawer(viewModel: HomeViewModel, closeDrawer: () -> Unit, iconShape: Int)
                             }
                         )
                         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                            // YENİ: Derin Kısayolları Menüde Göster (WhatsApp Yeni Mesaj vb.)
                             if (appShortcuts.isNotEmpty()) {
                                 appShortcuts.take(4).forEach { shortcut ->
                                     DropdownMenuItem(text = { Text(shortcut.shortLabel?.toString() ?: "Kısayol", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) }, onClick = {
-                                        expanded = false
-                                        try {
-                                            val launcherApps = context.getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
-                                            launcherApps.startShortcut(app.packageName, shortcut.id, null, null, Process.myUserHandle())
-                                            closeDrawer()
-                                        } catch (e: Exception) {}
+                                        expanded = false; try { val launcherApps = context.getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps; launcherApps.startShortcut(app.packageName, shortcut.id, null, null, Process.myUserHandle()); closeDrawer() } catch (e: Exception) {}
                                     })
                                 }
                                 Divider()
                             }
-                            
                             DropdownMenuItem(text = { Text("Ana Ekrana Ekle") }, onClick = { expanded = false; viewModel.pinAppToHome(app.packageName); closeDrawer() })
                             DropdownMenuItem(text = { Text("Dock'a Ekle") }, onClick = { expanded = false; viewModel.pinAppToDock(app.packageName); closeDrawer() })
                             Divider()
@@ -117,7 +127,6 @@ fun AppDrawer(viewModel: HomeViewModel, closeDrawer: () -> Unit, iconShape: Int)
             }
         }
         
-        // Alta çekildiyse arama çubuğunu en altta çiz
         if (bottomSearchBar) searchBar()
     }
 
