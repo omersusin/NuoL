@@ -50,6 +50,8 @@ fun AppDrawer(viewModel: HomeViewModel, closeDrawer: () -> Unit) {
                         DropdownMenuItem(text = { Text("Ana Ekrana Ekle") }, onClick = { expanded = false; viewModel.pinAppToHome(app.packageName); closeDrawer() })
                         DropdownMenuItem(text = { Text("Dock'a Ekle") }, onClick = { expanded = false; viewModel.pinAppToDock(app.packageName); closeDrawer() })
                         Divider()
+                        // YENİ: Uygulamayı Gizle Seçeneği
+                        DropdownMenuItem(text = { Text("Uygulamayı Gizle") }, onClick = { expanded = false; viewModel.hideApp(app.packageName); closeDrawer() })
                         DropdownMenuItem(text = { Text("Uygulama Bilgisi") }, onClick = { expanded = false; context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${app.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); closeDrawer() })
                     }
                 }

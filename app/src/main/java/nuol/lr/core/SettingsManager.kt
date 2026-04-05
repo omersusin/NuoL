@@ -18,9 +18,11 @@ class SettingsManager(private val context: Context) {
         val ICON_SIZE_KEY = intPreferencesKey("icon_size")
         val SHOW_LABELS_KEY = booleanPreferencesKey("show_labels")
         val THEME_MODE_KEY = intPreferencesKey("theme_mode")
-        
-        // YENİ: Eklenen Widget ID'lerini tutan liste
         val WIDGET_IDS_KEY = stringSetPreferencesKey("widget_ids")
+        
+        // YENİ: Uygulama Gizleme ve Durum Çubuğu
+        val HIDDEN_APPS_KEY = stringSetPreferencesKey("hidden_apps")
+        val SHOW_STATUS_BAR_KEY = booleanPreferencesKey("show_status_bar") // Varsayılan: true
     }
 
     val iconPackFlow: Flow<String?> = context.dataStore.data.map { it[ICON_PACK_KEY] }
@@ -31,11 +33,11 @@ class SettingsManager(private val context: Context) {
     val iconSizeFlow: Flow<Int> = context.dataStore.data.map { it[ICON_SIZE_KEY] ?: 56 }
     val showLabelsFlow: Flow<Boolean> = context.dataStore.data.map { it[SHOW_LABELS_KEY] ?: true }
     val themeModeFlow: Flow<Int> = context.dataStore.data.map { it[THEME_MODE_KEY] ?: 0 }
+    val widgetIdsFlow: Flow<List<Int>> = context.dataStore.data.map { prefs -> (prefs[WIDGET_IDS_KEY] ?: emptySet()).mapNotNull { it.toIntOrNull() } }
     
-    // YENİ: Widget ID'lerini okuyan akış (Int listesi olarak döndürür)
-    val widgetIdsFlow: Flow<List<Int>> = context.dataStore.data.map { prefs ->
-        (prefs[WIDGET_IDS_KEY] ?: emptySet()).mapNotNull { it.toIntOrNull() }
-    }
+    // YENİ AKIŞLAR
+    val hiddenAppsFlow: Flow<Set<String>> = context.dataStore.data.map { it[HIDDEN_APPS_KEY] ?: emptySet() }
+    val showStatusBarFlow: Flow<Boolean> = context.dataStore.data.map { it[SHOW_STATUS_BAR_KEY] ?: true }
 
     suspend fun setIconPackPreference(pkg: String?) { context.dataStore.edit { p -> if (pkg != null) p[ICON_PACK_KEY] = pkg else p.remove(ICON_PACK_KEY) } }
     suspend fun addPinnedApp(pkg: String) { context.dataStore.edit { p -> p[PINNED_APPS_KEY] = (p[PINNED_APPS_KEY] ?: emptySet()) + pkg } }
@@ -47,8 +49,11 @@ class SettingsManager(private val context: Context) {
     suspend fun setIconSize(size: Int) { context.dataStore.edit { p -> p[ICON_SIZE_KEY] = size } }
     suspend fun setShowLabels(show: Boolean) { context.dataStore.edit { p -> p[SHOW_LABELS_KEY] = show } }
     suspend fun setThemeMode(mode: Int) { context.dataStore.edit { p -> p[THEME_MODE_KEY] = mode } }
-
-    // YENİ: Widget Ekleme ve Kaldırma
     suspend fun addWidgetId(id: Int) { context.dataStore.edit { p -> p[WIDGET_IDS_KEY] = (p[WIDGET_IDS_KEY] ?: emptySet()) + id.toString() } }
     suspend fun removeWidgetId(id: Int) { context.dataStore.edit { p -> p[WIDGET_IDS_KEY] = (p[WIDGET_IDS_KEY] ?: emptySet()) - id.toString() } }
+    
+    // YENİ FONKSİYONLAR
+    suspend fun addHiddenApp(pkg: String) { context.dataStore.edit { p -> p[HIDDEN_APPS_KEY] = (p[HIDDEN_APPS_KEY] ?: emptySet()) + pkg } }
+    suspend fun removeHiddenApp(pkg: String) { context.dataStore.edit { p -> p[HIDDEN_APPS_KEY] = (p[HIDDEN_APPS_KEY] ?: emptySet()) - pkg } }
+    suspend fun setShowStatusBar(show: Boolean) { context.dataStore.edit { p -> p[SHOW_STATUS_BAR_KEY] = show } }
 }

@@ -8,14 +8,16 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import nuol.lr.ui.home.HomeScreen
 import nuol.lr.ui.home.HomeViewModel
 import nuol.lr.ui.theme.NuoLTheme
 
 class MainActivity : ComponentActivity() {
-    
-    // YENİ: Widget barındırıcı motoru. 1024 standart ID'dir.
     private lateinit var appWidgetHost: AppWidgetHost
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -26,22 +28,29 @@ class MainActivity : ComponentActivity() {
         setContent {
             val viewModel: HomeViewModel = viewModel()
             val themeMode by viewModel.themeMode.collectAsState()
+            val showStatusBar by viewModel.showStatusBar.collectAsState() // YENİ
             val isDark = when(themeMode) { 1 -> false; 2 -> true; else -> isSystemInDarkTheme() }
 
+            // YENİ: Durum Çubuğunu Dinamik Olarak Kapat/Aç
+            val view = LocalView.current
+            if (!view.isInEditMode) {
+                SideEffect {
+                    val window = this.window
+                    val insetsController = WindowCompat.getInsetsController(window, view)
+                    if (showStatusBar) {
+                        insetsController.show(WindowInsetsCompat.Type.statusBars())
+                    } else {
+                        insetsController.hide(WindowInsetsCompat.Type.statusBars())
+                    }
+                }
+            }
+
             NuoLTheme(darkTheme = isDark) {
-                // appWidgetHost parametresini arayüze geçiriyoruz
                 HomeScreen(viewModel = viewModel, appWidgetHost = appWidgetHost)
             }
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        appWidgetHost.startListening() // Widget'ları canlandırır (Örn: Saat tiklemesi)
-    }
-
-    override fun onStop() {
-        super.onStop()
-        appWidgetHost.stopListening() // Arka planda pil tüketimini engeller
-    }
+    override fun onStart() { super.onStart(); appWidgetHost.startListening() }
+    override fun onStop() { super.onStop(); appWidgetHost.stopListening() }
 }
