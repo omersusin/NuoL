@@ -48,9 +48,10 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     
-    // YENİ: ViewModel Compose Desteği
+    // Architecture & Coil
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
-    
-    // YENİ: İkon performansı için Coil kütüphanesi
     implementation("io.coil-kt:coil-compose:2.5.0")
+
+    // YENİ: Jetpack DataStore (Ayarları kaydetmek için)
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
 }
