@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.NuoL" parent="android:Theme.DeviceDefault.Wallpaper.NoActionBar">
-        <!-- Arka planı tamamen saydam yapıyoruz -->
+    <!-- Hataya sebep olan Wallpaper parent'ı en güvenli olan NoActionBar ile değiştirildi -->
+    <style name="Theme.NuoL" parent="@android:style/Theme.DeviceDefault.NoActionBar">
+        <!-- Arka planı saydam yapıyoruz -->
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:colorBackgroundCacheHint">@null</item>
-        <!-- Duvar kağıdını gösterme izni -->
+        <!-- Duvar kağıdını gösterme izni (Launcher'ın şeffaf çalışmasını sağlar) -->
         <item name="android:windowShowWallpaper">true</item>
         <!-- Durum ve Navigasyon çubuklarını saydam yap -->
         <item name="android:windowTranslucentStatus">true</item>
