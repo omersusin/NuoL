@@ -11,6 +11,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 @Composable
 fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
     val apps by viewModel.apps.collectAsState()
+    val pinnedApps by viewModel.pinnedApps.collectAsState() // YENİ: Pinned apps state'i
     val iconPacks by viewModel.iconPacks.collectAsState()
     
     var isDrawerOpen by remember { mutableStateOf(false) }
@@ -21,7 +22,9 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
             modifier = Modifier.weight(1f),
             onSwipeUp = { isDrawerOpen = true },
             iconPacks = iconPacks,
-            onApplyIconPack = { packageName -> viewModel.applyIconPack(packageName) }
+            pinnedApps = pinnedApps, // Parametreyi geçiyoruz
+            onApplyIconPack = { packageName -> viewModel.applyIconPack(packageName) },
+            onUnpinApp = { packageName -> viewModel.unpinAppFromHome(packageName) } // Kaldırma event'i
         )
 
         if (apps.isNotEmpty()) {
@@ -37,7 +40,8 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
             scrimColor = Color.Black.copy(alpha = 0.4f),
             windowInsets = WindowInsets.statusBars
         ) {
-            AppDrawer(viewModel = viewModel)
+            // YENİ: Çekmeceyi kapatma fonksiyonunu parametre olarak yolluyoruz
+            AppDrawer(viewModel = viewModel, closeDrawer = { isDrawerOpen = false })
         }
     }
 }

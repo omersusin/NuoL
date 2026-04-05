@@ -1,7 +1,8 @@
 package nuol.lr.ui.home
 
 import android.content.Intent
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -25,25 +26,19 @@ import coil.compose.AsyncImage
 import nuol.lr.core.AppInfo
 
 @Composable
-fun AppDrawer(viewModel: HomeViewModel = viewModel()) {
-    // Artık 'apps' yerine filtrelenmiş listeyi (filteredApps) dinliyoruz
+fun AppDrawer(viewModel: HomeViewModel = viewModel(), closeDrawer: () -> Unit = {}) {
     val filteredApps by viewModel.filteredApps.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val context = LocalContext.current
 
     Column(modifier = Modifier.fillMaxSize().padding(top = 16.dp)) {
-        
-        // Gerçek ve İşlevsel Arama Çubuğu (Material 3 TextField)
         TextField(
             value = searchQuery,
             onValueChange = { viewModel.onSearchQueryChange(it) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             placeholder = { Text("Uygulamalarda ara...") },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Ara") },
             trailingIcon = {
-                // Eğer bir şeyler yazıldıysa "X" (Temizle) butonu çıksın
                 if (searchQuery.isNotEmpty()) {
                     IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
                         Icon(Icons.Default.Clear, contentDescription = "Temizle")
@@ -62,48 +57,68 @@ fun AppDrawer(viewModel: HomeViewModel = viewModel()) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Filtrelenmiş Uygulama Grid Listesi
         LazyVerticalGrid(
             columns = GridCells.Fixed(4),
             contentPadding = WindowInsets.navigationBars.asPaddingValues(),
             modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp)
         ) {
             items(filteredApps) { app ->
-                AppItem(app = app) {
-                    val launchIntent = context.packageManager.getLaunchIntentForPackage(app.packageName)
-                    if (launchIntent != null) {
-                        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        context.startActivity(launchIntent)
+                AppItem(
+                    app = app,
+                    onClick = {
+                        val intent = context.packageManager.getLaunchIntentForPackage(app.packageName)
+                        if (intent != null) {
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            context.startActivity(intent)
+                            closeDrawer() // Uygulama açılınca çekmeceyi kapat
+                        }
+                    },
+                    onLongClick = {
+                        // Uzun basılınca ViewModel üzerinden Ana Ekrana ekle
+                        viewModel.pinAppToHome(app.packageName)
+                        closeDrawer() // Çekmeceyi kapatıp ana ekrana dön
                     }
-                }
+                )
             }
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun AppItem(app: AppInfo, onClick: () -> Unit) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .padding(4.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .clickable { onClick() }
-            .padding(8.dp)
-    ) {
-        AsyncImage(
-            model = app.icon,
-            contentDescription = app.label,
-            modifier = Modifier.size(56.dp)
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = app.label,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center
-        )
+fun AppItem(app: AppInfo, onClick: () -> Unit, onLongClick: () -> Unit = {}) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .padding(4.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = { expanded = true } // Uzun basınca menüyü aç
+                )
+                .padding(8.dp)
+        ) {
+            AsyncImage(model = app.icon, contentDescription = app.label, modifier = Modifier.size(56.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = app.label, style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onBackground, maxLines = 1,
+                overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center
+            )
+        }
+
+        // Açılır Menü (Uzun basıldığında çıkar)
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text("Ana Ekrana Ekle") },
+                onClick = {
+                    expanded = false
+                    onLongClick() // Ana ekrana ekleme fonksiyonunu tetikler
+                }
+            )
+        }
     }
 }

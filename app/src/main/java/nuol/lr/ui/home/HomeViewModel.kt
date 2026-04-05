@@ -14,8 +14,6 @@ import nuol.lr.core.SettingsManager
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val iconPackManager = IconPackManager(application)
     private val appManager = AppManager(application, iconPackManager)
-    
-    // YENİ: Ayar yöneticisini başlattık
     private val settingsManager = SettingsManager(application)
     
     private val _apps = MutableStateFlow<List<AppInfo>>(emptyList())
@@ -29,46 +27,33 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         else appList.filter { it.label.contains(query, ignoreCase = true) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    // YENİ: Ana ekrandaki uygulamalar (Orijinal listeden sadece pinlenmiş olanları süzer)
+    val pinnedApps: StateFlow<List<AppInfo>> = combine(_apps, settingsManager.pinnedAppsFlow) { appList, pinnedPkgs ->
+        appList.filter { pinnedPkgs.contains(it.packageName) }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     private val _iconPacks = MutableStateFlow<List<IconPackInfo>>(emptyList())
     val iconPacks: StateFlow<List<IconPackInfo>> = _iconPacks.asStateFlow()
 
     init {
         loadIconPacks()
-        
-        // YENİ: Uygulama açıldığında kayıtlı ikon paketini DataStore'dan dinler
         viewModelScope.launch {
             settingsManager.iconPackFlow.collect { savedPack ->
-                if (savedPack != null) {
-                    iconPackManager.setIconPack(savedPack)
-                } else {
-                    iconPackManager.setIconPack("")
-                }
-                // Seçim cihazdan okunduktan sonra uygulamaları yükle
+                if (savedPack != null) iconPackManager.setIconPack(savedPack)
+                else iconPackManager.setIconPack("")
                 loadApps()
             }
         }
     }
 
-    private fun loadIconPacks() {
-        viewModelScope.launch {
-            _iconPacks.value = iconPackManager.getAvailableIconPacks()
-        }
-    }
-
-    // YENİ: Artık değişikliği sadece hafızaya yazıyoruz, geri kalanını Flow hallediyor
-    fun applyIconPack(packageName: String?) {
-        viewModelScope.launch {
-            settingsManager.setIconPackPreference(packageName)
-        }
-    }
-
-    fun onSearchQueryChange(query: String) {
-        _searchQuery.value = query
-    }
-
-    private fun loadApps() {
-        viewModelScope.launch {
-            _apps.value = appManager.getInstalledApps()
-        }
-    }
+    private fun loadIconPacks() = viewModelScope.launch { _iconPacks.value = iconPackManager.getAvailableIconPacks() }
+    
+    fun applyIconPack(packageName: String?) = viewModelScope.launch { settingsManager.setIconPackPreference(packageName) }
+    
+    // YENİ: Ekleme/Çıkarma Fonksiyonları
+    fun pinAppToHome(packageName: String) = viewModelScope.launch { settingsManager.addPinnedApp(packageName) }
+    fun unpinAppFromHome(packageName: String) = viewModelScope.launch { settingsManager.removePinnedApp(packageName) }
+    
+    fun onSearchQueryChange(query: String) { _searchQuery.value = query }
+    private fun loadApps() = viewModelScope.launch { _apps.value = appManager.getInstalledApps() }
 }
