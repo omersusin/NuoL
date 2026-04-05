@@ -16,12 +16,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    // YENİ: Raw (Ham) uygulamaları alıp Özel İsimlerle (Custom Names) birleştirir
-    val apps: StateFlow<List<AppInfo>> = combine(_rawApps, settingsManager.customAppNamesFlow) { list, customNames ->
-        list.map { app -> 
-            val newName = customNames[app.packageName]
-            if (!newName.isNullOrBlank()) app.copy(label = newName) else app 
-        }
+    val apps = combine(_rawApps, settingsManager.customAppNamesFlow) { list, customNames ->
+        list.map { app -> val newName = customNames[app.packageName]; if (!newName.isNullOrBlank()) app.copy(label = newName) else app }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val appSortMode = settingsManager.appSortModeFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
@@ -48,7 +44,11 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val doubleTapAction = settingsManager.doubleTapActionFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
     val iconShape = settingsManager.iconShapeFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
     val enableBlur = settingsManager.enableBlurFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
-    val useMaterialYou = settingsManager.useMaterialYouFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true) // YENİ
+    val useMaterialYou = settingsManager.useMaterialYouFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    
+    // YENİ
+    val bottomSearchBar = settingsManager.bottomSearchBarFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    val hapticFeedback = settingsManager.hapticFeedbackFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
     init {
         viewModelScope.launch { iconPacks.value = iconPackManager.getAvailableIconPacks() }
@@ -81,8 +81,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun setDoubleTapAction(action: Int) = viewModelScope.launch { settingsManager.setDoubleTapAction(action) }
     fun setIconShape(shape: Int) = viewModelScope.launch { settingsManager.setIconShape(shape) }
     fun setEnableBlur(enable: Boolean) = viewModelScope.launch { settingsManager.setEnableBlur(enable) }
-    
-    // YENİ
     fun renameApp(pkg: String, newName: String) = viewModelScope.launch { settingsManager.setCustomAppName(pkg, newName) }
     fun setUseMaterialYou(use: Boolean) = viewModelScope.launch { settingsManager.setUseMaterialYou(use) }
+    
+    // YENİ
+    fun setBottomSearchBar(bottom: Boolean) = viewModelScope.launch { settingsManager.setBottomSearchBar(bottom) }
+    fun setHapticFeedback(enable: Boolean) = viewModelScope.launch { settingsManager.setHapticFeedback(enable) }
 }

@@ -31,45 +31,33 @@ fun SettingsScreen(viewModel: HomeViewModel, onBack: () -> Unit) {
     val allAppsWithHiddenState by viewModel.allAppsWithHiddenState.collectAsState()
     val drawerOpacity by viewModel.drawerOpacity.collectAsState()
     val appSortMode by viewModel.appSortMode.collectAsState()
-    
-    // YENİ STATE'LER
     val doubleTapAction by viewModel.doubleTapAction.collectAsState()
     val iconShape by viewModel.iconShape.collectAsState()
     val enableBlur by viewModel.enableBlur.collectAsState()
+    val useMaterialYou by viewModel.useMaterialYou.collectAsState()
+    
+    // YENİ
+    val bottomSearchBar by viewModel.bottomSearchBar.collectAsState()
+    val hapticFeedback by viewModel.hapticFeedback.collectAsState()
 
     var showHiddenAppsDialog by remember { mutableStateOf(false) }
     var showIconShapeDialog by remember { mutableStateOf(false) }
     var showDoubleTapDialog by remember { mutableStateOf(false) }
 
-    Scaffold(
-        topBar = { TopAppBar(title = { Text("NuoL Ayarları") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Geri") } }) }
-    ) { padding ->
+    Scaffold(topBar = { TopAppBar(title = { Text("NuoL Ayarları") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Geri") } }) }) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())) {
             
             Text("Gestures & Efektler (Premium)", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(16.dp))
-            ListItem(
-                headlineContent = { Text("Çift Tıklama Jesti") },
-                supportingContent = { Text(when(doubleTapAction) { 1 -> "Ayarları Aç"; 2 -> "Çekmeceyi Aç"; 3 -> "Bildirimleri İndir"; else -> "Kapalı" }) },
-                modifier = Modifier.clickable { showDoubleTapDialog = true }
-            )
-            ListItem(
-                headlineContent = { Text("Cam Bulanıklığı (Blur) Efekti") },
-                supportingContent = { Text("Dock ve Çekmece arkaplanını bulanıklaştırır (Android 12+)") },
-                trailingContent = { Switch(checked = enableBlur, onCheckedChange = { viewModel.setEnableBlur(it) }) }
-            )
+            ListItem(headlineContent = { Text("Çift Tıklama Jesti") }, supportingContent = { Text(when(doubleTapAction) { 1 -> "Ayarları Aç"; 2 -> "Çekmeceyi Aç"; 3 -> "Bildirimleri İndir"; else -> "Kapalı" }) }, modifier = Modifier.clickable { showDoubleTapDialog = true })
+            ListItem(headlineContent = { Text("Dokunsal Geri Bildirim (Titreşim)") }, supportingContent = { Text("Premium his için titreşim motorunu açar") }, trailingContent = { Switch(checked = hapticFeedback, onCheckedChange = { viewModel.setHapticFeedback(it) }) })
+            ListItem(headlineContent = { Text("Cam Bulanıklığı (Blur) Efekti") }, trailingContent = { Switch(checked = enableBlur, onCheckedChange = { viewModel.setEnableBlur(it) }) })
             
             Divider(modifier = Modifier.padding(vertical = 16.dp))
 
             Text("Görünüm ve İkonlar", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(16.dp))
+            ListItem(headlineContent = { Text("Material You Renkleri (Monet)") }, trailingContent = { Switch(checked = useMaterialYou, onCheckedChange = { viewModel.setUseMaterialYou(it) }) })
             ListItem(headlineContent = { Text("Tema Modu") }, supportingContent = { Text(when(themeMode) { 1 -> "Açık Tema"; 2 -> "Koyu Tema"; else -> "Sistem Varsayılanı" }) }, modifier = Modifier.clickable { val next = if(themeMode == 2) 0 else themeMode + 1; viewModel.setThemeMode(next) })
-            
-            // YENİ: İkon Şekli
-            ListItem(
-                headlineContent = { Text("İkon Şekli Maskesi") },
-                supportingContent = { Text(when(iconShape) { 1 -> "Daire"; 2 -> "Yuvarlatılmış Kare"; 3 -> "Kare"; 4 -> "Su Damlası"; else -> "Orijinal" }) },
-                modifier = Modifier.clickable { showIconShapeDialog = true }
-            )
-
+            ListItem(headlineContent = { Text("İkon Şekli Maskesi") }, supportingContent = { Text(when(iconShape) { 1 -> "Daire"; 2 -> "Yuvarlatılmış Kare"; 3 -> "Kare"; 4 -> "Su Damlası"; else -> "Orijinal" }) }, modifier = Modifier.clickable { showIconShapeDialog = true })
             ListItem(headlineContent = { Text("Durum Çubuğunu Göster") }, trailingContent = { Switch(checked = showStatusBar, onCheckedChange = { viewModel.setShowStatusBar(it) }) })
             Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                 Text("İkon Boyutu: ${iconSize}dp")
@@ -80,6 +68,7 @@ fun SettingsScreen(viewModel: HomeViewModel, onBack: () -> Unit) {
             Divider(modifier = Modifier.padding(vertical = 16.dp))
 
             Text("Ana Ekran & Çekmece (Grid)", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(16.dp))
+            ListItem(headlineContent = { Text("Arama Çubuğunu Alta Al") }, supportingContent = { Text("Ergonomik erişim için arama çubuğunu alta taşır") }, trailingContent = { Switch(checked = bottomSearchBar, onCheckedChange = { viewModel.setBottomSearchBar(it) }) })
             Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                 Text("Ana Ekran Sütun Sayısı: $homeCols")
                 Slider(value = homeCols.toFloat(), onValueChange = { viewModel.setHomeCols(it.toInt()) }, valueRange = 3f..7f, steps = 3)
@@ -90,30 +79,17 @@ fun SettingsScreen(viewModel: HomeViewModel, onBack: () -> Unit) {
                 Text("Çekmece Arka Plan Görünürlüğü: %$drawerOpacity")
                 Slider(value = drawerOpacity.toFloat(), onValueChange = { viewModel.setDrawerOpacity(it.toInt()) }, valueRange = 10f..100f)
             }
-
             ListItem(headlineContent = { Text("Uygulama Sıralaması") }, supportingContent = { Text(if (appSortMode == 0) "A'dan Z'ye" else "Z'den A'ya") }, modifier = Modifier.clickable { viewModel.setAppSortMode(if (appSortMode == 0) 1 else 0) })
 
             Divider(modifier = Modifier.padding(vertical = 16.dp))
 
             Text("Güvenlik", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(16.dp))
-            ListItem(headlineContent = { Text("Gizlenen Uygulamalar") }, supportingContent = { Text("Uygulama çekmecesinde gizlenen uygulamaları yönetin") }, modifier = Modifier.clickable { showHiddenAppsDialog = true })
+            ListItem(headlineContent = { Text("Gizlenen Uygulamalar") }, modifier = Modifier.clickable { showHiddenAppsDialog = true })
             
-            // Dialogs
-            if (showDoubleTapDialog) {
-                AlertDialog(onDismissRequest = { showDoubleTapDialog = false }, title = { Text("Çift Tıklama Jesti") }, text = { Column {
-                    listOf(0 to "Kapalı", 1 to "Ayarları Aç", 2 to "Çekmeceyi Aç", 3 to "Bildirimleri İndir").forEach { (v, t) -> Text(t, modifier = Modifier.fillMaxWidth().clickable { viewModel.setDoubleTapAction(v); showDoubleTapDialog = false }.padding(16.dp)) }
-                } }, confirmButton = { TextButton(onClick = { showDoubleTapDialog = false }) { Text("İptal") } })
-            }
-
-            if (showIconShapeDialog) {
-                AlertDialog(onDismissRequest = { showIconShapeDialog = false }, title = { Text("İkon Şekli") }, text = { Column {
-                    listOf(0 to "Orijinal", 1 to "Daire", 2 to "Yuvarlatılmış Kare", 3 to "Kare", 4 to "Su Damlası").forEach { (v, t) -> Text(t, modifier = Modifier.fillMaxWidth().clickable { viewModel.setIconShape(v); showIconShapeDialog = false }.padding(16.dp)) }
-                } }, confirmButton = { TextButton(onClick = { showIconShapeDialog = false }) { Text("İptal") } })
-            }
-
-            if (showHiddenAppsDialog) {
-                AlertDialog(onDismissRequest = { showHiddenAppsDialog = false }, title = { Text("Gizli Uygulamalar") }, text = { LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp)) { items(allAppsWithHiddenState) { (app, isHidden) -> Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) { Row(verticalAlignment = Alignment.CenterVertically) { AsyncImage(model = app.icon, contentDescription = null, modifier = Modifier.size(32.dp)); Spacer(modifier = Modifier.width(12.dp)); Text(app.label) }; Switch(checked = isHidden, onCheckedChange = { hide -> if (hide) viewModel.hideApp(app.packageName) else viewModel.unhideApp(app.packageName) }) } } } }, confirmButton = { TextButton(onClick = { showHiddenAppsDialog = false }) { Text("Tamam") } })
-            }
+            // Dialoglar (Bir öncekiyle aynı)
+            if (showDoubleTapDialog) { AlertDialog(onDismissRequest = { showDoubleTapDialog = false }, title = { Text("Çift Tıklama") }, text = { Column { listOf(0 to "Kapalı", 1 to "Ayarları Aç", 2 to "Çekmeceyi Aç", 3 to "Bildirimleri İndir").forEach { (v, t) -> Text(t, modifier = Modifier.fillMaxWidth().clickable { viewModel.setDoubleTapAction(v); showDoubleTapDialog = false }.padding(16.dp)) } } }, confirmButton = { TextButton(onClick = { showDoubleTapDialog = false }) { Text("İptal") } }) }
+            if (showIconShapeDialog) { AlertDialog(onDismissRequest = { showIconShapeDialog = false }, title = { Text("İkon Şekli") }, text = { Column { listOf(0 to "Orijinal", 1 to "Daire", 2 to "Yuvarlatılmış Kare", 3 to "Kare", 4 to "Su Damlası").forEach { (v, t) -> Text(t, modifier = Modifier.fillMaxWidth().clickable { viewModel.setIconShape(v); showIconShapeDialog = false }.padding(16.dp)) } } }, confirmButton = { TextButton(onClick = { showIconShapeDialog = false }) { Text("İptal") } }) }
+            if (showHiddenAppsDialog) { AlertDialog(onDismissRequest = { showHiddenAppsDialog = false }, title = { Text("Gizli Uygulamalar") }, text = { LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp)) { items(allAppsWithHiddenState) { (app, isHidden) -> Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) { Row(verticalAlignment = Alignment.CenterVertically) { AsyncImage(model = app.icon, contentDescription = null, modifier = Modifier.size(32.dp)); Spacer(modifier = Modifier.width(12.dp)); Text(app.label) }; Switch(checked = isHidden, onCheckedChange = { hide -> if (hide) viewModel.hideApp(app.packageName) else viewModel.unhideApp(app.packageName) }) } } } }, confirmButton = { TextButton(onClick = { showHiddenAppsDialog = false }) { Text("Tamam") } }) }
         }
     }
 }
