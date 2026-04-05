@@ -11,40 +11,32 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 @Composable
 fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
     val apps by viewModel.apps.collectAsState()
+    val iconPacks by viewModel.iconPacks.collectAsState()
     
-    // Çekmecenin açık/kapalı durumunu tutan State
     var isDrawerOpen by remember { mutableStateOf(false) }
-    
-    // BottomSheet animasyon yöneticisi (tam ekran açılması için skipPartiallyExpanded = true)
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    // Arka planı tamamen şeffaf tutuyoruz ki cihazın kendi duvar kağıdı arkada görünsün
     Column(modifier = Modifier.fillMaxSize()) {
-        
-        // Üst kısım: Çalışma Alanı (Yukarı kaydırma dinleyicisine sahip)
         Workspace(
             modifier = Modifier.weight(1f),
-            onSwipeUp = { isDrawerOpen = true }
+            onSwipeUp = { isDrawerOpen = true },
+            iconPacks = iconPacks,
+            onApplyIconPack = { packageName -> viewModel.applyIconPack(packageName) }
         )
 
-        // Alt kısım: Dock
         if (apps.isNotEmpty()) {
             Dock(apps = apps)
         }
     }
 
-    // Çekmece Açıkken Gösterilecek Arayüz
     if (isDrawerOpen) {
         ModalBottomSheet(
             onDismissRequest = { isDrawerOpen = false },
             sheetState = sheetState,
-            // Çekmecenin arka plan rengi ve hafif saydamlığı
             containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.95f),
-            // Çekmece açıkken arka planı hafif karartır (Modern Launcher stili)
             scrimColor = Color.Black.copy(alpha = 0.4f),
             windowInsets = WindowInsets.statusBars
         ) {
-            // 4. Adımda yaptığımız AppDrawer'ı buraya çağırıyoruz
             AppDrawer(viewModel = viewModel)
         }
     }
