@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.NuoL" parent="android:Theme.DeviceDefault.Wallpaper.NoActionBar">
+        <!-- Arka planı tamamen saydam yapıyoruz -->
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:colorBackgroundCacheHint">@null</item>
+        <!-- Duvar kağıdını gösterme izni -->
+        <item name="android:windowShowWallpaper">true</item>
+        <!-- Durum ve Navigasyon çubuklarını saydam yap -->
+        <item name="android:windowTranslucentStatus">true</item>
+        <item name="android:windowTranslucentNavigation">true</item>
+    </style>
+</resources>
