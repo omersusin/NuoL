@@ -4,33 +4,27 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import nuol.lr.ui.home.AppDrawer
 import nuol.lr.ui.theme.NuoLTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        // Bir Launcher için en önemli ayar: Tam Ekran ve Saydam Barlar
-        enableEdgeToEdge() 
-        
+        enableEdgeToEdge()
         setContent {
             NuoLTheme {
-                // Arka planı tamamen saydam yapıyoruz ki cihazın duvar kağıdı görünsün
+                // Arka planda duvar kağıdıyla uyumlu hafif saydam bir katman
                 Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background.copy(alpha = 0.95f))
                 ) {
-                    Text(
-                        text = "NuoL Launcher'a Hoş Geldiniz",
-                        style = MaterialTheme.typography.displayLarge,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    AppDrawer()
                 }
             }
         }
