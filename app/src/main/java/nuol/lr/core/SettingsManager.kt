@@ -19,10 +19,12 @@ class SettingsManager(private val context: Context) {
         val SHOW_LABELS_KEY = booleanPreferencesKey("show_labels")
         val THEME_MODE_KEY = intPreferencesKey("theme_mode")
         val WIDGET_IDS_KEY = stringSetPreferencesKey("widget_ids")
-        
-        // YENİ: Uygulama Gizleme ve Durum Çubuğu
         val HIDDEN_APPS_KEY = stringSetPreferencesKey("hidden_apps")
-        val SHOW_STATUS_BAR_KEY = booleanPreferencesKey("show_status_bar") // Varsayılan: true
+        val SHOW_STATUS_BAR_KEY = booleanPreferencesKey("show_status_bar")
+        
+        // YENİ: Çekmece Saydamlığı ve Sıralama Modu
+        val DRAWER_OPACITY_KEY = intPreferencesKey("drawer_opacity") // %10 - %100
+        val APP_SORT_MODE_KEY = intPreferencesKey("app_sort_mode") // 0: A-Z, 1: Z-A
     }
 
     val iconPackFlow: Flow<String?> = context.dataStore.data.map { it[ICON_PACK_KEY] }
@@ -34,10 +36,12 @@ class SettingsManager(private val context: Context) {
     val showLabelsFlow: Flow<Boolean> = context.dataStore.data.map { it[SHOW_LABELS_KEY] ?: true }
     val themeModeFlow: Flow<Int> = context.dataStore.data.map { it[THEME_MODE_KEY] ?: 0 }
     val widgetIdsFlow: Flow<List<Int>> = context.dataStore.data.map { prefs -> (prefs[WIDGET_IDS_KEY] ?: emptySet()).mapNotNull { it.toIntOrNull() } }
-    
-    // YENİ AKIŞLAR
     val hiddenAppsFlow: Flow<Set<String>> = context.dataStore.data.map { it[HIDDEN_APPS_KEY] ?: emptySet() }
     val showStatusBarFlow: Flow<Boolean> = context.dataStore.data.map { it[SHOW_STATUS_BAR_KEY] ?: true }
+    
+    // YENİ AKIŞLAR
+    val drawerOpacityFlow: Flow<Int> = context.dataStore.data.map { it[DRAWER_OPACITY_KEY] ?: 95 }
+    val appSortModeFlow: Flow<Int> = context.dataStore.data.map { it[APP_SORT_MODE_KEY] ?: 0 }
 
     suspend fun setIconPackPreference(pkg: String?) { context.dataStore.edit { p -> if (pkg != null) p[ICON_PACK_KEY] = pkg else p.remove(ICON_PACK_KEY) } }
     suspend fun addPinnedApp(pkg: String) { context.dataStore.edit { p -> p[PINNED_APPS_KEY] = (p[PINNED_APPS_KEY] ?: emptySet()) + pkg } }
@@ -51,9 +55,11 @@ class SettingsManager(private val context: Context) {
     suspend fun setThemeMode(mode: Int) { context.dataStore.edit { p -> p[THEME_MODE_KEY] = mode } }
     suspend fun addWidgetId(id: Int) { context.dataStore.edit { p -> p[WIDGET_IDS_KEY] = (p[WIDGET_IDS_KEY] ?: emptySet()) + id.toString() } }
     suspend fun removeWidgetId(id: Int) { context.dataStore.edit { p -> p[WIDGET_IDS_KEY] = (p[WIDGET_IDS_KEY] ?: emptySet()) - id.toString() } }
-    
-    // YENİ FONKSİYONLAR
     suspend fun addHiddenApp(pkg: String) { context.dataStore.edit { p -> p[HIDDEN_APPS_KEY] = (p[HIDDEN_APPS_KEY] ?: emptySet()) + pkg } }
     suspend fun removeHiddenApp(pkg: String) { context.dataStore.edit { p -> p[HIDDEN_APPS_KEY] = (p[HIDDEN_APPS_KEY] ?: emptySet()) - pkg } }
     suspend fun setShowStatusBar(show: Boolean) { context.dataStore.edit { p -> p[SHOW_STATUS_BAR_KEY] = show } }
+    
+    // YENİ FONKSİYONLAR
+    suspend fun setDrawerOpacity(opacity: Int) { context.dataStore.edit { p -> p[DRAWER_OPACITY_KEY] = opacity } }
+    suspend fun setAppSortMode(mode: Int) { context.dataStore.edit { p -> p[APP_SORT_MODE_KEY] = mode } }
 }

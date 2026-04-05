@@ -13,10 +13,13 @@ import androidx.compose.ui.graphics.Color
 fun HomeScreen(viewModel: HomeViewModel, appWidgetHost: AppWidgetHost) {
     val pinnedApps by viewModel.pinnedApps.collectAsState()
     val dockApps by viewModel.dockApps.collectAsState()
-    val widgetIds by viewModel.widgetIds.collectAsState() // YENİ
+    val widgetIds by viewModel.widgetIds.collectAsState()
     val homeCols by viewModel.homeColumns.collectAsState()
     val iconSize by viewModel.iconSize.collectAsState()
     val showLabels by viewModel.showLabels.collectAsState()
+    
+    // YENİ: Saydamlık değerini dinliyoruz
+    val drawerOpacity by viewModel.drawerOpacity.collectAsState()
     
     var isDrawerOpen by remember { mutableStateOf(false) }
     var isSettingsOpen by remember { mutableStateOf(false) }
@@ -31,16 +34,11 @@ fun HomeScreen(viewModel: HomeViewModel, appWidgetHost: AppWidgetHost) {
             Workspace(
                 modifier = Modifier.weight(1f),
                 onSwipeUp = { isDrawerOpen = true },
-                pinnedApps = pinnedApps, 
-                widgetIds = widgetIds, // YENİ
-                appWidgetHost = appWidgetHost, // YENİ
+                pinnedApps = pinnedApps, widgetIds = widgetIds, appWidgetHost = appWidgetHost,
                 homeColumns = homeCols, iconSize = iconSize, showLabels = showLabels,
                 onUnpinApp = { pkg -> viewModel.unpinAppFromHome(pkg) },
-                onAddWidget = { id -> viewModel.addWidget(id) }, // YENİ
-                onRemoveWidget = { id -> 
-                    appWidgetHost.deleteAppWidgetId(id)
-                    viewModel.removeWidget(id) 
-                },
+                onAddWidget = { id -> viewModel.addWidget(id) },
+                onRemoveWidget = { id -> appWidgetHost.deleteAppWidgetId(id); viewModel.removeWidget(id) },
                 onOpenSettings = { isSettingsOpen = true }
             )
             Dock(apps = dockApps, iconSize = iconSize, onUnpin = { pkg -> viewModel.unpinAppFromDock(pkg) })
@@ -49,7 +47,9 @@ fun HomeScreen(viewModel: HomeViewModel, appWidgetHost: AppWidgetHost) {
         if (isDrawerOpen) {
             ModalBottomSheet(
                 onDismissRequest = { isDrawerOpen = false }, sheetState = sheetState,
-                containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.95f), scrimColor = Color.Black.copy(alpha = 0.4f), windowInsets = WindowInsets.statusBars
+                // YENİ: Slider'dan gelen değere göre arka planın şeffaflığı belirleniyor
+                containerColor = MaterialTheme.colorScheme.background.copy(alpha = drawerOpacity / 100f), 
+                scrimColor = Color.Black.copy(alpha = 0.4f), windowInsets = WindowInsets.statusBars
             ) {
                 AppDrawer(viewModel = viewModel, closeDrawer = { isDrawerOpen = false })
             }

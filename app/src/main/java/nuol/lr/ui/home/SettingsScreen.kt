@@ -29,6 +29,10 @@ fun SettingsScreen(viewModel: HomeViewModel, onBack: () -> Unit) {
     val themeMode by viewModel.themeMode.collectAsState()
     val showStatusBar by viewModel.showStatusBar.collectAsState()
     val allAppsWithHiddenState by viewModel.allAppsWithHiddenState.collectAsState()
+    
+    // YENİ STATE'LER
+    val drawerOpacity by viewModel.drawerOpacity.collectAsState()
+    val appSortMode by viewModel.appSortMode.collectAsState()
 
     var showHiddenAppsDialog by remember { mutableStateOf(false) }
 
@@ -43,10 +47,7 @@ fun SettingsScreen(viewModel: HomeViewModel, onBack: () -> Unit) {
             Divider(modifier = Modifier.padding(vertical = 16.dp))
 
             Text("Görünüm ve Tema", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(16.dp))
-            
             ListItem(headlineContent = { Text("Tema Modu") }, supportingContent = { Text(when(themeMode) { 1 -> "Açık Tema"; 2 -> "Koyu Tema"; else -> "Sistem Varsayılanı" }) }, modifier = Modifier.clickable { val next = if(themeMode == 2) 0 else themeMode + 1; viewModel.setThemeMode(next) })
-            
-            // YENİ: Durum Çubuğunu Gizle/Göster
             ListItem(headlineContent = { Text("Durum Çubuğunu Göster") }, trailingContent = { Switch(checked = showStatusBar, onCheckedChange = { viewModel.setShowStatusBar(it) }) })
 
             Column(modifier = Modifier.padding(horizontal = 16.dp)) {
@@ -64,11 +65,21 @@ fun SettingsScreen(viewModel: HomeViewModel, onBack: () -> Unit) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text("Çekmece Sütun Sayısı: $drawerCols")
                 Slider(value = drawerCols.toFloat(), onValueChange = { viewModel.setDrawerCols(it.toInt()) }, valueRange = 3f..7f, steps = 3)
+                Spacer(modifier = Modifier.height(8.dp))
+                // YENİ: Çekmece Saydamlığı
+                Text("Çekmece Arka Plan Görünürlüğü: %$drawerOpacity")
+                Slider(value = drawerOpacity.toFloat(), onValueChange = { viewModel.setDrawerOpacity(it.toInt()) }, valueRange = 10f..100f)
             }
+
+            // YENİ: Sıralama Modu Seçimi
+            ListItem(
+                headlineContent = { Text("Uygulama Sıralaması") },
+                supportingContent = { Text(if (appSortMode == 0) "A'dan Z'ye" else "Z'den A'ya") },
+                modifier = Modifier.clickable { viewModel.setAppSortMode(if (appSortMode == 0) 1 else 0) }
+            )
 
             Divider(modifier = Modifier.padding(vertical = 16.dp))
 
-            // YENİ: Gizli Uygulamaları Yönet
             Text("Güvenlik", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(16.dp))
             ListItem(
                 headlineContent = { Text("Gizlenen Uygulamalar") },
@@ -78,25 +89,17 @@ fun SettingsScreen(viewModel: HomeViewModel, onBack: () -> Unit) {
             
             if (showHiddenAppsDialog) {
                 AlertDialog(
-                    onDismissRequest = { showHiddenAppsDialog = false },
-                    title = { Text("Gizli Uygulamalar") },
+                    onDismissRequest = { showHiddenAppsDialog = false }, title = { Text("Gizli Uygulamalar") },
                     text = {
                         LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp)) {
                             items(allAppsWithHiddenState) { (app, isHidden) ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
+                                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         AsyncImage(model = app.icon, contentDescription = null, modifier = Modifier.size(32.dp))
                                         Spacer(modifier = Modifier.width(12.dp))
                                         Text(app.label)
                                     }
-                                    Switch(
-                                        checked = isHidden,
-                                        onCheckedChange = { hide -> if (hide) viewModel.hideApp(app.packageName) else viewModel.unhideApp(app.packageName) }
-                                    )
+                                    Switch(checked = isHidden, onCheckedChange = { hide -> if (hide) viewModel.hideApp(app.packageName) else viewModel.unhideApp(app.packageName) })
                                 }
                             }
                         }
