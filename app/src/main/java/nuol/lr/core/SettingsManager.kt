@@ -23,11 +23,13 @@ class SettingsManager(private val context: Context) {
         val SHOW_STATUS_BAR_KEY = booleanPreferencesKey("show_status_bar")
         val DRAWER_OPACITY_KEY = intPreferencesKey("drawer_opacity")
         val APP_SORT_MODE_KEY = intPreferencesKey("app_sort_mode")
+        val DOUBLE_TAP_ACTION_KEY = intPreferencesKey("double_tap_action")
+        val ICON_SHAPE_KEY = intPreferencesKey("icon_shape")
+        val ENABLE_BLUR_KEY = booleanPreferencesKey("enable_blur")
         
-        // YENİ: Melez Başlatıcı Özellikleri
-        val DOUBLE_TAP_ACTION_KEY = intPreferencesKey("double_tap_action") // 0:Yok, 1:Ayarlar, 2:Çekmece, 3:Bildirimler
-        val ICON_SHAPE_KEY = intPreferencesKey("icon_shape") // 0:Orijinal, 1:Daire, 2:YuvarlakKare, 3:Kare, 4:SuDamlası
-        val ENABLE_BLUR_KEY = booleanPreferencesKey("enable_blur") // Cam bulanıklığı efekti
+        // YENİ: Ultra-Pro Özellikler
+        val CUSTOM_APP_NAMES_KEY = stringSetPreferencesKey("custom_app_names") // Format: pkg=:=Yeniİsim
+        val USE_MATERIAL_YOU_KEY = booleanPreferencesKey("use_material_you") // Duvar kağıdı renk motoru
     }
 
     val iconPackFlow: Flow<String?> = context.dataStore.data.map { it[ICON_PACK_KEY] }
@@ -43,11 +45,16 @@ class SettingsManager(private val context: Context) {
     val showStatusBarFlow: Flow<Boolean> = context.dataStore.data.map { it[SHOW_STATUS_BAR_KEY] ?: true }
     val drawerOpacityFlow: Flow<Int> = context.dataStore.data.map { it[DRAWER_OPACITY_KEY] ?: 95 }
     val appSortModeFlow: Flow<Int> = context.dataStore.data.map { it[APP_SORT_MODE_KEY] ?: 0 }
-
-    // YENİ AKIŞLAR
     val doubleTapActionFlow: Flow<Int> = context.dataStore.data.map { it[DOUBLE_TAP_ACTION_KEY] ?: 0 }
     val iconShapeFlow: Flow<Int> = context.dataStore.data.map { it[ICON_SHAPE_KEY] ?: 0 }
     val enableBlurFlow: Flow<Boolean> = context.dataStore.data.map { it[ENABLE_BLUR_KEY] ?: false }
+    
+    // YENİ AKIŞLAR
+    val customAppNamesFlow: Flow<Map<String, String>> = context.dataStore.data.map { prefs ->
+        val set = prefs[CUSTOM_APP_NAMES_KEY] ?: emptySet()
+        set.associate { val parts = it.split("=:="); parts[0] to (parts.getOrNull(1) ?: "") }
+    }
+    val useMaterialYouFlow: Flow<Boolean> = context.dataStore.data.map { it[USE_MATERIAL_YOU_KEY] ?: true }
 
     suspend fun setIconPackPreference(pkg: String?) { context.dataStore.edit { p -> if (pkg != null) p[ICON_PACK_KEY] = pkg else p.remove(ICON_PACK_KEY) } }
     suspend fun addPinnedApp(pkg: String) { context.dataStore.edit { p -> p[PINNED_APPS_KEY] = (p[PINNED_APPS_KEY] ?: emptySet()) + pkg } }
@@ -66,9 +73,17 @@ class SettingsManager(private val context: Context) {
     suspend fun setShowStatusBar(show: Boolean) { context.dataStore.edit { p -> p[SHOW_STATUS_BAR_KEY] = show } }
     suspend fun setDrawerOpacity(opacity: Int) { context.dataStore.edit { p -> p[DRAWER_OPACITY_KEY] = opacity } }
     suspend fun setAppSortMode(mode: Int) { context.dataStore.edit { p -> p[APP_SORT_MODE_KEY] = mode } }
-
-    // YENİ FONKSİYONLAR
     suspend fun setDoubleTapAction(action: Int) { context.dataStore.edit { p -> p[DOUBLE_TAP_ACTION_KEY] = action } }
     suspend fun setIconShape(shape: Int) { context.dataStore.edit { p -> p[ICON_SHAPE_KEY] = shape } }
     suspend fun setEnableBlur(enable: Boolean) { context.dataStore.edit { p -> p[ENABLE_BLUR_KEY] = enable } }
+
+    // YENİ FONKSİYONLAR
+    suspend fun setCustomAppName(pkg: String, newName: String) {
+        context.dataStore.edit { p ->
+            val current = (p[CUSTOM_APP_NAMES_KEY] ?: emptySet()).filterNot { it.startsWith("$pkg=:=") }.toMutableSet()
+            if (newName.isNotBlank()) current.add("$pkg=:=$newName")
+            p[CUSTOM_APP_NAMES_KEY] = current
+        }
+    }
+    suspend fun setUseMaterialYou(use: Boolean) { context.dataStore.edit { p -> p[USE_MATERIAL_YOU_KEY] = use } }
 }

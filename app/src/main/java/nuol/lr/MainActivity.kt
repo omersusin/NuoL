@@ -28,29 +28,25 @@ class MainActivity : ComponentActivity() {
         setContent {
             val viewModel: HomeViewModel = viewModel()
             val themeMode by viewModel.themeMode.collectAsState()
-            val showStatusBar by viewModel.showStatusBar.collectAsState() // YENİ
+            val showStatusBar by viewModel.showStatusBar.collectAsState()
+            val useMaterialYou by viewModel.useMaterialYou.collectAsState() // YENİ
             val isDark = when(themeMode) { 1 -> false; 2 -> true; else -> isSystemInDarkTheme() }
 
-            // YENİ: Durum Çubuğunu Dinamik Olarak Kapat/Aç
             val view = LocalView.current
             if (!view.isInEditMode) {
                 SideEffect {
                     val window = this.window
                     val insetsController = WindowCompat.getInsetsController(window, view)
-                    if (showStatusBar) {
-                        insetsController.show(WindowInsetsCompat.Type.statusBars())
-                    } else {
-                        insetsController.hide(WindowInsetsCompat.Type.statusBars())
-                    }
+                    if (showStatusBar) insetsController.show(WindowInsetsCompat.Type.statusBars())
+                    else insetsController.hide(WindowInsetsCompat.Type.statusBars())
                 }
             }
 
-            NuoLTheme(darkTheme = isDark) {
+            NuoLTheme(darkTheme = isDark, useMaterialYou = useMaterialYou) {
                 HomeScreen(viewModel = viewModel, appWidgetHost = appWidgetHost)
             }
         }
     }
-
     override fun onStart() { super.onStart(); appWidgetHost.startListening() }
     override fun onStop() { super.onStop(); appWidgetHost.stopListening() }
 }
