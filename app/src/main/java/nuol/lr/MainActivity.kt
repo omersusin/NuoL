@@ -7,24 +7,27 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
-import nuol.lr.ui.home.AppDrawer
+import androidx.compose.ui.graphics.Color
+import nuol.lr.ui.home.HomeScreen
 import nuol.lr.ui.theme.NuoLTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Edge-to-Edge: Durum çubuğunu ve navigasyon çubuğunu şeffaf yapar
         enableEdgeToEdge()
+        
         setContent {
             NuoLTheme {
-                // Arka planda duvar kağıdıyla uyumlu hafif saydam bir katman
+                // Temel katman tamamen şeffaf, böylece sistemin duvar kağıdı görünür!
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background.copy(alpha = 0.95f))
+                        .background(Color.Transparent) 
                 ) {
-                    AppDrawer()
+                    HomeScreen()
                 }
             }
         }
